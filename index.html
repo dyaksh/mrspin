@@ -1,39 +1,277 @@
 <!DOCTYPE html>
-<html>
+<html lang="gu">
 <head>
-  <title>Mission Rajipo Spinner</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spin Wheel</title>
+
+  <!-- Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
   <style>
     body {
-      margin: 0;
-      height: 100vh;
-      width: 100vw;
-      background-image: url('../mainbg.png');
-      background-size: cover;
-      background-repeat: no-repeat;
-      background-position: center;
-      overflow: hidden;
-      display: grid;
-      grid-template-columns: 4fr 8fr; /* 2:10 ratio */
-    }
-
-    
-
-    .right {
+      font-family: "Noto Sans Gujarati", sans-serif;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: rgb(255, 255, 255);
+      height: 100vh;
+      gap: 2rem;
+      overflow: hidden;
+
+      /* ✅ Full background image setup */
+      background-image: url("./bg.jpg");
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      background-attachment: fixed;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 500px;
+      height: 500px;
+    }
+
+    /* Pointer at the top */
+    .pointer {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-top: 40px solid #ff0000;
+      z-index: 10;
+      filter: drop-shadow(0px 4px 3px rgba(0, 0, 0, 0.3));
+    }
+
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+
+    .spin-button {
+      font-size: 1.5rem;
+      padding: 1rem 3rem;
+      border: none;
+      color: white;
+      background-color: #ff6b35;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity 0.3s, transform 0.3s;
+      box-shadow: 0 10px 40px -10px rgba(255, 107, 53, 0.4);
+      font-weight: bold;
+    }
+
+    .spin-button:hover {
+      transform: scale(1.05);
+    }
+
+    .spin-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Dialog (Result Popup) */
+    .dialog {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 20;
+    }
+
+    .dialog.active {
+      display: flex;
+    }
+
+    .dialog-content {
+      background: white;
+      padding: 2rem;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      min-width: 300px;
+      animation: pop 0.3s ease;
+    }
+
+    @keyframes pop {
+      from {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+      to {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    .dialog-content h2 {
+      background: linear-gradient(to right, #ff6b35, #ffb347);
+      -webkit-background-clip: text;
+      color: transparent;
       font-size: 2rem;
-      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-      margin-top: 3%;
-      
+      margin-bottom: 1rem;
+    }
+
+    .dialog-content p {
+      background: linear-gradient(to right, #ff6b35, #ffb347);
+      -webkit-background-clip: text;
+      color: transparent;
+      font-size: 3rem;
+      font-weight: bold;
+      margin-bottom: 1.5rem;
+    }
+
+    .close-btn {
+      background: linear-gradient(to right, #ff6b35, #ffb347);
+      color: white;
+      border: none;
+      padding: 0.6rem 1.5rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: opacity 0.3s;
+    }
+
+    .close-btn:hover {
+      opacity: 0.8;
     }
   </style>
 </head>
+
 <body>
-  <div class="left"></div>
-  <div class="right">
-<object data="spin.html" type="text/html" width="500%" height="500%"></object>  
-</div>
+  <div class="wheel-container">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="500" height="500"></canvas>
+  </div>
+
+  <button id="spinButton" class="spin-button">Spin</button>
+
+  <div id="dialog" class="dialog">
+    <div class="dialog-content">
+      <h2>તમારો શબ્દ</h2>
+      <p id="resultText"></p>
+      <button class="close-btn" id="closeDialog">બંધ કરો</button>
+    </div>
+  </div>
+
+  <script>
+    const segments = [
+      { text: "બ્રહ્મ", color: "#F4C542" },
+      { text: "સંગ", color: "#4CAF93" },
+      { text: "સત્સંગ", color: "#FFA726" },
+      { text: "સ્વામિનારાયણ", color: "#9C51B6" },
+      { text: "ગુરુ", color: "#FF8A65" },
+    ];
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinButton = document.getElementById("spinButton");
+    const dialog = document.getElementById("dialog");
+    const resultText = document.getElementById("resultText");
+    const closeDialog = document.getElementById("closeDialog");
+
+    let rotation = 0;
+    let isSpinning = false;
+
+    // 🌀 Draw the Spin Wheel
+    function drawWheel() {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = Math.min(centerX, centerY) - 10;
+      const segmentAngle = (2 * Math.PI) / segments.length;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      segments.forEach((segment, index) => {
+        const startAngle = index * segmentAngle - Math.PI / 2;
+        const endAngle = startAngle + segmentAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.closePath();
+        ctx.fillStyle = segment.color;
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Label text
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + segmentAngle / 2);
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 24px Arial";
+        ctx.fillText(segment.text, radius * 0.65, 8);
+        ctx.restore();
+      });
+
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+      ctx.strokeStyle = "#FF6B35";
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+
+    drawWheel();
+
+    // 🎯 Spin logic
+    spinButton.addEventListener("click", () => {
+      if (isSpinning) return;
+      isSpinning = true;
+      spinButton.disabled = true;
+
+      const spins = 5;
+      const randomAngle = Math.random() * 360;
+      const totalRotation = spins * 360 + randomAngle;
+      rotation += totalRotation;
+
+      canvas.style.transition = "transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)";
+      canvas.style.transform = `rotate(${rotation}deg)`;
+
+      setTimeout(() => {
+        const normalizedRotation = ((rotation % 360) + 360) % 360;
+        const segmentAngle = 360 / segments.length;
+        const beta = (360 - normalizedRotation) % 360;
+        const segmentIndex = Math.floor(beta / segmentAngle) % segments.length;
+        const landedSegment = segments[segmentIndex];
+
+        resultText.textContent = landedSegment.text;
+        dialog.classList.add("active");
+        launchConfetti();
+
+        isSpinning = false;
+        spinButton.disabled = false;
+      }, 4000);
+    });
+
+    closeDialog.addEventListener("click", () => {
+      dialog.classList.remove("active");
+    });
+
+    // 🎉 Confetti effect
+    function launchConfetti() {
+      confetti({
+        particleCount: 200,
+        spread: 360,
+        origin: { y: 0.5 }
+      });
+    }
+  </script>
 </body>
 </html>
