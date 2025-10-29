@@ -5,35 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Spin Wheel</title>
 
-  <!-- Confetti Library -->
+  <!-- Confetti (same as Dice project) -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
   <style>
-    body {
-      font-family: "Noto Sans Gujarati", sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      gap: 2rem;
-      overflow: hidden;
+body {
+  font-family: "Noto Sans Gujarati", sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  gap: 2rem;
+  overflow: hidden;
 
-      /* ✅ Full background image setup */
-      background-image: url("./bg.jpg");
-      background-repeat: no-repeat;
-      background-position: center center;
-      background-size: cover;
-      background-attachment: fixed;
-    }
+  /* ✅ Proper full background image setup */
+  background-image: url("./bg.jpg");
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: cover; /* fills whole screen */
+  background-attachment: fixed; /* optional: keeps image fixed on scroll */
+}
+
 
     .wheel-container {
       position: relative;
-      width: 500px;
-      height: 500px;
     }
 
-    /* Pointer at the top */
     .pointer {
       position: absolute;
       top: -40px;
@@ -45,12 +43,11 @@
       border-right: 20px solid transparent;
       border-top: 40px solid #ff0000;
       z-index: 10;
-      filter: drop-shadow(0px 4px 3px rgba(0, 0, 0, 0.3));
+      filter: drop-shadow(0px 4px 3px rgba(0,0,0,0.3));
     }
 
     canvas {
       border-radius: 50%;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     }
 
     .spin-button {
@@ -62,8 +59,7 @@
       border-radius: 8px;
       cursor: pointer;
       transition: opacity 0.3s, transform 0.3s;
-      box-shadow: 0 10px 40px -10px rgba(255, 107, 53, 0.4);
-      font-weight: bold;
+      box-shadow: 0 10px 40px -10px rgba(255,107,53,0.4);
     }
 
     .spin-button:hover {
@@ -76,7 +72,7 @@
       transform: none;
     }
 
-    /* Dialog (Result Popup) */
+    /* Dialog */
     .dialog {
       position: fixed;
       top: 0;
@@ -86,7 +82,7 @@
       display: none;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.5);
+     
       z-index: 20;
     }
 
@@ -99,20 +95,14 @@
       padding: 2rem;
       border-radius: 12px;
       text-align: center;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
       min-width: 300px;
       animation: pop 0.3s ease;
     }
 
     @keyframes pop {
-      from {
-        transform: scale(0.9);
-        opacity: 0;
-      }
-      to {
-        transform: scale(1);
-        opacity: 1;
-      }
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
     }
 
     .dialog-content h2 {
@@ -148,7 +138,6 @@
     }
   </style>
 </head>
-
 <body>
   <div class="wheel-container">
     <div class="pointer"></div>
@@ -161,7 +150,7 @@
     <div class="dialog-content">
       <h2>તમારો શબ્દ</h2>
       <p id="resultText"></p>
-      <button class="close-btn" id="closeDialog">બંધ કરો</button>
+      <button class="close-btn" id="closeDialog">Close</button>
     </div>
   </div>
 
@@ -184,7 +173,6 @@
     let rotation = 0;
     let isSpinning = false;
 
-    // 🌀 Draw the Spin Wheel
     function drawWheel() {
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
@@ -207,7 +195,6 @@
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Label text
         ctx.save();
         ctx.translate(centerX, centerY);
         ctx.rotate(startAngle + segmentAngle / 2);
@@ -218,7 +205,7 @@
         ctx.restore();
       });
 
-      // Center circle
+      // center circle
       ctx.beginPath();
       ctx.arc(centerX, centerY, 30, 0, 2 * Math.PI);
       ctx.fillStyle = "#fff";
@@ -230,7 +217,6 @@
 
     drawWheel();
 
-    // 🎯 Spin logic
     spinButton.addEventListener("click", () => {
       if (isSpinning) return;
       isSpinning = true;
@@ -264,7 +250,7 @@
       dialog.classList.remove("active");
     });
 
-    // 🎉 Confetti effect
+    // 🎉 Confetti (same as Dice project)
     function launchConfetti() {
       confetti({
         particleCount: 200,
